@@ -2,6 +2,23 @@
 ---
 ## 1. Project Description
 This project is in collaboration with CSULB ASME's Windmill Project within its Electrical Team. Specifically, this repo will cover the important software that goes into the controls, IoT, and Data Acquisition of the windmill. The purpose is to monitor the windmill power generation and blade speeds, as an indiciation of overall health, and to control the custom pitch system. 
+### Project Structure
+---
+#### Diagram 1 - Project overview
+---
+<img width="1421" height="589" alt="Image" src="https://github.com/user-attachments/assets/e3eef921-12e7-491d-bd88-0a5c2f02076d" />
+
+#### Diagram 2 - Wiring 
+---
+<img width="859" height="894" alt="Image" src="https://github.com/user-attachments/assets/663551fa-2f21-4877-85e3-5fdb373f3c5c" />
+
+### Project Management
+*Project Iteration & Stages*
+* *Stage 1:*
+* *Stage 2:*
+* *Stage 3:*
+* *Stage 4:*
+
 ## 2. How to Setup the Project
 ### Bill of Materials
 ---
@@ -45,19 +62,3 @@ monitor_speed = 115200
 4. *Copy & Paste Code from This Repo or Git Clone*
 5. *Add necessary libraries. See **Section Overview***
 
-## 3. Project Structure
----
-### Diagram 1 - Project overview
----
-<img width="1421" height="589" alt="Image" src="https://github.com/user-attachments/assets/e3eef921-12e7-491d-bd88-0a5c2f02076d" />
-
-### Diagram 2 - Wiring 
----
-<img width="859" height="894" alt="Image" src="https://github.com/user-attachments/assets/663551fa-2f21-4877-85e3-5fdb373f3c5c" />
-
-### Project Management
-*Project Iteration & Stages*
-* *Stage 1:*
-* *Stage 2:*
-* *Stage 3:*
-* *Stage 4:*
