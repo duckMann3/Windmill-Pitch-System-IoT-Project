@@ -38,9 +38,12 @@ monitor_speed = 115200
 ### Step-by-Step Guide
 ---
 *NOTE: This project was developed in VS Code using the extension Platform I/O with associated extensions. Thus, this guide will showcase a guide using the below tools & libraries.*
-1. *Download VS Code*
-2. *Download Platformio*
-3. *Add necessary libraries*
+1. *[Download VS Code](https://code.visualstudio.com/download?_exp_download=fb315fc982)*
+2. *[Download Platformio VS Code Extension]()*
+3. *[Create Platformio Project](https://platformio.org/install/ide?install=vscode)*
+    * *For More:* [Link](https://docs.platformio.org/en/latest/integration/ide/vscode.html)
+4. *Copy & Paste Code from This Repo or Git Clone*
+5. *Add necessary libraries. See **Section Overview***
 
 ## 3. Project Structure
 ---
@@ -51,7 +54,6 @@ monitor_speed = 115200
 ### Diagram 2 - Wiring 
 ---
 <img width="859" height="894" alt="Image" src="https://github.com/user-attachments/assets/663551fa-2f21-4877-85e3-5fdb373f3c5c" />
-
 
 ### Project Management
 *Project Iteration & Stages*
