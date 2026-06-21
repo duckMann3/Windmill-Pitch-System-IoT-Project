@@ -20,6 +20,8 @@ This project is in collaboration with CSULB ASME's Windmill Project within its E
     * `Adafruit_NeoPixel.h`: for debuggign & LED testing using ESP32's on-board RGB LED.
     * `ESP32Servo.h`: for servo control using PWM.
     * `AsyncTCP.h & ESPAsyncWebServer.h`: for ESP32 hosted webpage for sensor reading & data acquisition.
+### `platformio.ini`
+---
 ```bash
 [env:freenove_esp32_s3_wroom]
 platform = espressif32
@@ -31,21 +33,24 @@ lib_deps =
 	madhephaestus/ESP32Servo@^3.2.0
 	esp32async/AsyncTCP@^3.4.10
 	me-no-dev/ESPAsyncWebServer@^3.6.0
+monitor_speed = 115200
 ```
-* **
-### Step-by-Step
+### Step-by-Step Guide
 ---
-* Servo
-* Adafruit 
-* ESP32 Webpage
-### Project Structure
+*NOTE: This project was developed in VS Code using the extension Platform I/O with associated extensions. Thus, this guide will showcase a guide using the below tools & libraries.*
+1. *Download VS Code*
+2. *Download Platformio*
+3. *Add necessary libraries*
+
+## 3. Project Structure
 ---
 ### Diagrams
 ---
+<img width="1421" height="589" alt="Image" src="https://github.com/user-attachments/assets/e3eef921-12e7-491d-bd88-0a5c2f02076d" />
 
-## Project Management
+### Project Management
 *Project Iteration & Stages*
-### Stage 1
----
-### Stage 2
----
+* *Stage 1:*
+* *Stage 2:*
+* *Stage 3:*
+* *Stage 4:*
