@@ -17,8 +17,21 @@ This project is in collaboration with CSULB ASME's Windmill Project within its E
     * Arduino IDE
     * VS Code + PlatformIO
 * *Necessary Libraries*
-    * 
-    *
+    * `Adafruit_NeoPixel.h`: for debuggign & LED testing using ESP32's on-board RGB LED.
+    * `ESP32Servo.h`: for servo control using PWM.
+    * `AsyncTCP.h & ESPAsyncWebServer.h`: for ESP32 hosted webpage for sensor reading & data acquisition.
+```bash
+[env:freenove_esp32_s3_wroom]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+lib_deps = 
+	adafruit/Adafruit INA219@^1.2.3
+	adafruit/Adafruit NeoPixel@^1.15.5
+	madhephaestus/ESP32Servo@^3.2.0
+	esp32async/AsyncTCP@^3.4.10
+	me-no-dev/ESPAsyncWebServer@^3.6.0
+```
 * **
 ### Step-by-Step
 ---
