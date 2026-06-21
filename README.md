@@ -13,11 +13,18 @@ This project is in collaboration with CSULB ASME's Windmill Project within its E
 <img width="859" height="894" alt="Image" src="https://github.com/user-attachments/assets/663551fa-2f21-4877-85e3-5fdb373f3c5c" />
 
 ### Project Management
-*Project Iteration & Stages*
-* *Stage 1:*
-* *Stage 2:*
-* *Stage 3:*
-* *Stage 4:*
+* *Stage 1: Sensor Testing & Development* ***(Current)***
+    * This stage involved setting up the project, downloading necessary dependencies, and configuring `platformio.ini`.
+    * This stage also included drafting `src/main.cpp`.
+    * Current Modular Design:
+        * The design of the source file was built to be individually testable using `#if defined()` precprocessor directives.
+        * The purpose was the `#define` & label tests for individual sensor components (e.g, hall effect sensor, servo & pwm, etc.).
+        * To test, please uncomment your desired test and uncomment the rest of the sensors that will not be tested.
+        * **WARNING:** There exists overlap in the way the code was written, so be careful when uncommenting multiple module definitions.
+        * **NOTE:** Webpage is currently in development.
+    * **Next Steps:** Remove `#define` headers & modules, place them into functions, test the sensors together, and continue developing the ESP32 webpage.
+* *Stage 2: On the Field Testing & Webpage Development*
+* *Stage 3:TBD*
 
 ## 2. How to Setup the Project
 ### Bill of Materials
