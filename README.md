@@ -44,9 +44,14 @@ monitor_speed = 115200
 
 ## 3. Project Structure
 ---
-### Diagrams
+### Diagram 1 - Project overview
 ---
 <img width="1421" height="589" alt="Image" src="https://github.com/user-attachments/assets/e3eef921-12e7-491d-bd88-0a5c2f02076d" />
+
+### Diagram 2 - Wiring 
+---
+<img width="859" height="894" alt="Image" src="https://github.com/user-attachments/assets/663551fa-2f21-4877-85e3-5fdb373f3c5c" />
+
 
 ### Project Management
 *Project Iteration & Stages*
