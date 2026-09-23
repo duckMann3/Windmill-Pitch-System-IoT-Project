@@ -1,13 +1,15 @@
 #include <Arduino.h>
-#include <webpages.h>
+// #include <webpages.h>
 
 // ***** MODULE TESTS: ****
 // #define  LED_TEST
-// #define  RGB_LED_TEST
+#define  RGB_LED_TEST
 // #define SERVO_TEST 
 // #define HALL_TEST 
 // #define CURRENT_TEST
-#define WEBPAGE_TEST
+// #define WEBPAGE_TEST_1
+// #define WEBPAGE_TEST
+
 
 #if defined(LED_TEST)
   #define  EXTERN_PIN     7   // External RED LED
@@ -31,13 +33,33 @@
 
 #if defined(HALL_TEST)
   #define HALL_SENSOR 11
-  volatile int count = 0; 
+  const int MAGNETS_PER_REV = 1;
+  volatile int pulses = 0;
+  void onPulse(void) {
+    pulses++;
+  }
 #endif
 
 #if defined(CURRENT_TEST)
   #include <Wire.h>
   #include <Adafruit_INA219.h>
   Adafruit_INA219 ina219;
+#endif
+
+#if defined(WEBPAGE_TEST_1)
+  // #include <WiFi.h>
+  // #include <time.h>
+  const char* ssid = "REPLACE";
+  const char* password = "REPLACE";
+
+  // NTP server:
+  const char* ntpServer = "pool.ntp.org";
+
+  // Timezone offset (seconds)
+  // Example: UTC +5:30 = 5.5 * 3600 = 19800
+  const long gmtOffset_sec = 0;     // Change for your timezone
+  const int daylightOffset_sec = 0; // Change if DST applies
+
 #endif
 
 #if defined(WEBPAGE_TEST)
@@ -69,6 +91,7 @@ void setup() {
   #endif
 
   #if defined(RGB_LED_TEST)
+    Serial.begin(115200);
     pixels.begin();
   #endif 
 
@@ -80,6 +103,7 @@ void setup() {
   #if defined(HALL_TEST)
     Serial.begin(115200);
     pinMode(HALL_SENSOR, INPUT);
+    attachInterrupt(digitalPinToInterrupt(HALL_SENSOR), onPulse, FALLING);
   #endif
 
   #if defined(CURRENT_TEST)
@@ -94,6 +118,24 @@ void setup() {
         delay(10);
       }
     }
+  #endif
+
+  #if defined(WEBPAGE_TEST_1)
+    Serial.begin(9600);
+    // Connect to Wi-Fi
+    /*
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi");
+    while(WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("\nWiFi Connected");
+
+    // Initialize time
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    Serial.println("Time initialized");
+    */
   #endif
 
   #if defined(WEBPAGE_TEST)
@@ -134,10 +176,12 @@ void loop() {
   #if defined(RGB_LED_TEST)
     pixels.clear();
     for(int i = 0; i < NUM_PIXELS; i++) {
-      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+      pixels.setPixelColor(i, pixels.Color(0, 0, 255));
       pixels.show();
       delay(DELAY_VAL);
     }
+    Serial.println("MOWWW");
+    delay(1000);
   #endif
 
   #if defined(SERVO_TEST)
@@ -154,12 +198,16 @@ void loop() {
   #endif
 
   #if defined(HALL_TEST)
-    if(digitalRead(HALL_SENSOR) == LOW) {
-      count++;
-    }
-    Serial.print("Magnet passes: ");
-    Serial.println(count);
-    delay(500);
+    noInterrupts();
+    int count = pulses;
+    pulses = 0;
+    interrupts();
+    
+    // RPM = (pulses per second x 60) / magnets per revolution
+    float rpm = (count / (float)MAGNETS_PER_REV) * 60.0;
+    Serial.print("RPM: ");
+    Serial.println(rpm);
+    delay(1000);
   #endif
 
   #if defined(CURRENT_TEST)
@@ -180,6 +228,29 @@ void loop() {
     Serial.print("Current: "); Serial.print(current_mA); Serial.println(" mA");
     // Serial.print("Power: "); Serial.print(power_mW); Serial.println(" mW");
     delay(500);
+  #endif
+
+  #if defined(WEBPAGE_TEST_1)
+    Serial.println("Hello World!");
+    /*
+    struct tm timeinfo;
+
+    if(!getLocalTime(&timeinfo)) {
+      Serial.println("Failed to obtain time!");
+      delay(1000);
+      return;
+    }
+
+    Serial.printf("Date: %04d-%02d-%02d  ",
+                   timeinfo.tm_year + 1900,
+                   timeinfo.tm_mon + 1,
+                   timeinfo.tm_mday);
+    Serial.printf("Time: %02d:%02d:%02d\n",
+                   timeinfo.tm_hour,
+                   timeinfo.tm_min,
+                   timeinfo.tm_sec);
+    */
+    delay(100); // Update every second
   #endif
 
   #if defined(WEBPAGE_TEST)
