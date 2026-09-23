@@ -3,14 +3,17 @@
 
 // ***** MODULE TESTS: ****
 // #define  LED_TEST
-#define  RGB_LED_TEST
+// #define  RGB_LED_TEST
 // #define SERVO_TEST 
 // #define HALL_TEST 
 // #define CURRENT_TEST
 // #define WEBPAGE_TEST_1
+#define WEBPAGE_TEST_2
 // #define WEBPAGE_TEST
 
-
+//====================================================================================================
+// START PROTOTYPES 
+//====================================================================================================
 #if defined(LED_TEST)
   #define  EXTERN_PIN     7   // External RED LED
 #endif
@@ -47,10 +50,27 @@
 #endif
 
 #if defined(WEBPAGE_TEST_1)
-  // #include <WiFi.h>
-  // #include <time.h>
-  const char* ssid = "REPLACE";
-  const char* password = "REPLACE";
+  #include <WiFi.h>
+  #include <time.h>
+  const char* ssid = "Phone2";
+  const char* password = "1ue4kcmif50fo";
+
+  // NTP server:
+  const char* ntpServer = "pool.ntp.org";
+
+  // Timezone offset (seconds)
+  // Example: UTC +5:30 = 5.5 * 3600 = 19800
+  const long gmtOffset_sec = 0;     // Change for your timezone
+  const int daylightOffset_sec = 0; // Change if DST applies
+#endif
+
+#if defined(WEBPAGE_TEST_2)
+  #include <WiFi.h>
+  #include <WebServer.h>
+  #include <time.h>
+
+  const char* ssid = "Phone2";
+  const char* password = "1ue4kcmif50fo";
 
   // NTP server:
   const char* ntpServer = "pool.ntp.org";
@@ -60,6 +80,62 @@
   const long gmtOffset_sec = 0;     // Change for your timezone
   const int daylightOffset_sec = 0; // Change if DST applies
 
+  WebServer server(80);
+
+  String formatTimeNow();
+  void handleRoot();
+  void handleTime();
+#endif
+
+#if defined(WEBPAGE_TEST)
+  void notifyClients() {
+    ws.textAll(String(ledState));
+  }
+
+  void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
+    AwsFrameInfo* info = (AwsFrameInfo*)arg;
+    if(info -> final && info -> index == 0 && info -> len == len && info -> opcode == WS_TEXT) {
+      data[len] = 0;
+      if(strcmp((char*)data, "toggle") == 0) {
+        ledState = !ledState;
+        notifyClients();
+      }
+    }
+  }
+
+  void onEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
+    switch(type) {
+      case WS_EVT_CONNECT:
+        Serial.printf("WebSocket client #%u connected from %s\n", client -> id(), client -> remoteIP().toString().c_str());
+        break;
+      case WS_EVT_DISCONNECT:
+        Serial.printf("WebSocket client $%u disconnected\n", client -> id());
+        break;
+      case WS_EVT_DATA:
+        handleWebSocketMessage(arg, data, len);
+        break;
+      case WS_EVT_PONG:
+      case WS_EVT_ERROR:
+        break;
+    }
+  }
+
+  void initWebSocket() {
+    ws.onEvent(onEvent);
+    server.addHandler(&ws);
+  }
+
+  String processor(const String& var) {
+    Serial.println(var);
+    if(var == "STATE") {
+      if(ledState) {
+        return "ON";
+      } else {
+        return "OFF";
+      }
+    }
+    return String();
+  }
 #endif
 
 #if defined(WEBPAGE_TEST)
@@ -84,6 +160,10 @@
   AsyncWebServer server(80);
   AsyncWebSocket ws("/ws");
 #endif
+
+//====================================================================================================
+// END OF PROTOTYPES & START OF MAIN SETUP FUNCTION 
+//====================================================================================================
 
 void setup() {
   #if defined(LED_TEST)
@@ -121,9 +201,8 @@ void setup() {
   #endif
 
   #if defined(WEBPAGE_TEST_1)
-    Serial.begin(9600);
+    Serial.begin(115200);
     // Connect to Wi-Fi
-    /*
     WiFi.begin(ssid, password);
     Serial.print("Connecting to WiFi");
     while(WiFi.status() != WL_CONNECTED) {
@@ -135,7 +214,6 @@ void setup() {
     // Initialize time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     Serial.println("Time initialized");
-    */
   #endif
 
   #if defined(WEBPAGE_TEST)
@@ -163,6 +241,10 @@ void setup() {
     server.begin(); // Start server
   #endif
 }
+
+//====================================================================================================
+// START OF MAIN LOOP FUNCTION
+//====================================================================================================
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -231,8 +313,6 @@ void loop() {
   #endif
 
   #if defined(WEBPAGE_TEST_1)
-    Serial.println("Hello World!");
-    /*
     struct tm timeinfo;
 
     if(!getLocalTime(&timeinfo)) {
@@ -249,8 +329,40 @@ void loop() {
                    timeinfo.tm_hour,
                    timeinfo.tm_min,
                    timeinfo.tm_sec);
-    */
-    delay(100); // Update every second
+    delay(1000); // Update every second
+  #endif
+
+  #if defined(WEBPAGE_TEST_2)
+      Serial.begin(115200);
+
+      // Connect Wi-Fi
+      WiFi.begin(ssid, password);
+      Serial.print("Connecting to WiFi");
+      while(WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+      }
+      Serial.println("\nWiFi connected!");
+      Serial.print("ESP32 IP address: ");
+      Serial.println(WiFi.localIP());
+
+      // NTP time init
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+      // Optional: wait for a bit for first sync
+      Serial.println("Syncing time...");
+      for (int i = 0; i < 15; i++) {
+        if (formatTimeNow().indexOf("not available") == -1) break;
+        delay(500);
+      }
+      Serial.println("Current time: " + formatTimeNow());
+  
+      // Web routes
+      server.on("/", handleRoot);
+      server.on("/time", handleTime);
+
+      server.begin();
+      Serial.println("Web server started. Open the IP in your browser.");
   #endif
 
   #if defined(WEBPAGE_TEST)
@@ -258,6 +370,71 @@ void loop() {
     digitalWrite(ledPin, ledState);
   #endif
 }
+
+//====================================================================================================
+// END OF MAIN LOOP FUNCTION & START OF FUNCTION DECLARATIONS
+//====================================================================================================
+
+#if defined(WEBPAGE_TEST_2)
+  String formatTimeNow() {
+    struct tm timeinfo;
+    if(!getLocalTime(&timeinfo)) {
+      return String("Time not available (NTP not synced yet)");
+    }
+
+    char buf[32];
+
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    return String(buf);
+  }
+
+  void handleRoot() {
+  // Simple HTML page that fetches /time every second
+    String html = R"rawliteral(
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>ESP32 Time</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; }
+        .card { padding: 16px; border: 1px solid #ddd; border-radius: 12px; max-width: 420px; }
+        #t { font-size: 1.6rem; font-weight: 700; }
+        .small { color: #666; margin-top: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div>Current time:</div>
+        <div id="t">Loading...</div>
+        <div class="small">Updates every second</div>
+      </div>
+
+      <script>
+        async function updateTime(){
+          try{
+            const r = await fetch('/time', { cache: 'no-store' });
+            const text = await r.text();
+            document.getElementById('t').textContent = text;
+          } catch(e){
+            document.getElementById('t').textContent = 'Error';
+          }
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+      </script>
+    </body>
+    </html>
+    )rawliteral";
+
+    server.send(200, "text/html", html);
+  }
+
+  void handleTime() {
+    server.send(200, "text/plain", formatTimeNow());
+  }
+#endif
 
 #if defined(WEBPAGE_TEST)
   void notifyClients() {
