@@ -1,15 +1,21 @@
+#include "../include/esp32_credentials.h"
 #include <Arduino.h>
 // #include <webpages.h>
 
 // ***** MODULE TESTS: ****
-// #define  LED_TEST
-// #define  RGB_LED_TEST
+// #define HELLO_WORLD_TEST 
+// #define LED_TEST
+// #define RGB_LED_TEST
 // #define SERVO_TEST 
 // #define HALL_TEST 
 // #define CURRENT_TEST
-// #define WEBPAGE_TEST_1
-#define WEBPAGE_TEST_2
-// #define WEBPAGE_TEST
+
+// #define WEBPAGE_TEST   // Testing ESP32 Webpage (first, broad test)
+// #define WEBPAGE_TEST_1 // Testing ESP32 Connection to Router #1 (Station Mode)
+// #define WEBPAGE_TEST_2 // Testing ESP32 Connection to Router #2 (Ran into Issues)
+// #define WEBPAGE_TEST_3 // Testing ESP32 as Soft Access Point (AP Mode)
+
+#define WEBPAGE_TEST_4 // Testing ESP32 in AP Mode with Sensor Data
 
 //====================================================================================================
 // START PROTOTYPES 
@@ -52,8 +58,9 @@
 #if defined(WEBPAGE_TEST_1)
   #include <WiFi.h>
   #include <time.h>
-  const char* ssid = "Phone2";
-  const char* password = "1ue4kcmif50fo";
+
+  const char* ssid = HOTSPOT_SSID;
+  const char* password = HOTSPOT_PASSWORD;
 
   // NTP server:
   const char* ntpServer = "pool.ntp.org";
@@ -69,8 +76,8 @@
   #include <WebServer.h>
   #include <time.h>
 
-  const char* ssid = "Phone2";
-  const char* password = "1ue4kcmif50fo";
+  const char* ssid = HOTSPOT_SSID;
+  const char* password = HOTSPOT_PASSWORD;
 
   // NTP server:
   const char* ntpServer = "pool.ntp.org";
@@ -85,6 +92,24 @@
   String formatTimeNow();
   void handleRoot();
   void handleTime();
+#endif
+
+#if defined(WEBPAGE_TEST_3)
+  #include <WiFi.h>
+
+  const char* ssid = AP_SSID;
+  const char* password = AP_PASSWORD;
+
+  WiFiServer server(80); // Set web server port nuber to 80
+  String header;         // Variable to store the HTTP request
+
+  // Auxiliar variables to store the current output state:
+  String GPIO4_State = "OFF";
+  String GPIO5_State = "OFF";
+
+  // Assignent GPIO pins:
+  const int GPIO4 = 4;
+  const int GPIO5 = 5;
 #endif
 
 #if defined(WEBPAGE_TEST)
@@ -161,11 +186,41 @@
   AsyncWebSocket ws("/ws");
 #endif
 
+#if defined(WEBPAGE_TEST_4)
+  #include <WiFi.h>
+  // For Current Sensor:
+  #include <Wire.h>
+  #include <Adafruit_INA219.h>
+  Adafruit_INA219 ina219;
+
+  // For Hall Sensor:
+  #define HALL_SENSOR 11
+  const int MAGNETS_PER_REV = 1;
+  volatile int pulses = 0;
+  void onPulse(void) {
+    pulses++;
+  }
+
+  // For Webserver:
+  const char* ssid = AP_SSID;
+  const char* password = AP_PASSWORD;
+
+  WiFiServer server(80); // Set web server port nuber to 80
+  String header;         // Variable to store the HTTP request
+
+  void Output_Webserver_Info(void);
+  void HandleRoot(void);
+#endif
+
 //====================================================================================================
 // END OF PROTOTYPES & START OF MAIN SETUP FUNCTION 
 //====================================================================================================
 
 void setup() {
+  #if defined(HELLO_WORLD_TEST)
+    Serial.begin(115200);
+  #endif
+
   #if defined(LED_TEST)
     pinMode(EXTERN_PIN, OUTPUT);
   #endif
@@ -182,7 +237,7 @@ void setup() {
 
   #if defined(HALL_TEST)
     Serial.begin(115200);
-    pinMode(HALL_SENSOR, INPUT);
+    pinMode(HALL_SENSOR, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(HALL_SENSOR), onPulse, FALLING);
   #endif
 
@@ -198,6 +253,7 @@ void setup() {
         delay(10);
       }
     }
+    ina219.setCalibration_16V_400mA();
   #endif
 
   #if defined(WEBPAGE_TEST_1)
@@ -214,6 +270,15 @@ void setup() {
     // Initialize time
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     Serial.println("Time initialized");
+  #endif
+  
+  #if defined(WEBPAGE_TEST_3)
+    Serial.begin(115200);
+    pinMode(GPIO4, OUTPUT);
+    pinMode(GPIO5, OUTPUT);
+
+    digitalWrite(GPIO4, LOW);
+    digitalWrite(GPIO5, LOW);
   #endif
 
   #if defined(WEBPAGE_TEST)
@@ -240,6 +305,27 @@ void setup() {
 
     server.begin(); // Start server
   #endif
+
+  #if defined(WEBPAGE_TEST_4)
+    Serial.begin(115200);
+
+    // For Hall Sensor:
+    pinMode(HALL_SENSOR, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(HALL_SENSOR), onPulse, FALLING);
+
+    // For Current Sensor:
+    while(!Serial) {
+      delay(1);
+    }
+
+    if(!ina219.begin()) {
+      Serial.println("Failed to find INA219 chip");
+      while(1) {
+        delay(10);
+      }
+    }
+    ina219.setCalibration_16V_400mA();
+  #endif
 }
 
 //====================================================================================================
@@ -248,6 +334,11 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  #if defined(HELLO_WORLD_TEST)
+    Serial.println("Hello World!");
+    delay(1000);
+  #endif 
+
   #if defined(LED_TEST)
     digitalWrite(EXTERN_PIN, HIGH);
     delay(1000);
@@ -365,9 +456,195 @@ void loop() {
       Serial.println("Web server started. Open the IP in your browser.");
   #endif
 
+  #if defined(WEBPAGE_TEST_3)
+      Serial.println("=================================================");
+      // Connect to Wi-Fi network with SSID & Password:
+      Serial.println("Setting AP (Access Point)...");
+      // Remove the password parameter, if AP is open
+      WiFi.softAP(ssid, password);
+
+      IPAddress IP = WiFi.softAPIP();
+      Serial.print("AP IP Address: ");
+      Serial.println(IP);
+
+      server.begin();
+      Serial.println("=================================================");
+
+      WiFiClient client = server.available(); // Listen for incoming clients
+
+      if(client) {
+        Serial.println("New Client.");
+        String currentLine = "";
+
+        while(client.connected()) {
+          if(client.available()) {
+            char c = client.read();
+            Serial.write(c);
+            header += c;
+            if(c == '\n') {
+              if(currentLine.length() == 0) {
+                client.println("HTTP/1.1 200 OK");
+                client.println("Content-type:text/html");
+                client.println("Connection: close");
+                client.println();
+
+                // Turns the GPIOs ON & OFF:
+                if(header.indexOf("GET /4/ON") >= 0) {
+                  Serial.println("GPIO 4 ON");
+                  GPIO4_State = "ON";
+                  digitalWrite(GPIO4, HIGH);
+                } else if(header.indexOf("GET /4/OFF")) {
+                  Serial.println("GPIO 4 OFF");
+                  GPIO4_State = "OFF";
+                  digitalWrite(GPIO4, LOW);
+                } else if(header.indexOf("GET /5/ON")) {
+                  Serial.println("GPIO 5 ON");
+                  GPIO5_State = "ON";
+                  digitalWrite(GPIO5, HIGH);
+                } else if(header.indexOf("GET /5/OFF")) {
+                  Serial.println("GPIO 5 OFF");
+                  GPIO5_State = "OFF";
+                  digitalWrite(GPIO5, LOW);
+                }
+                 // Display the HTML web page
+                client.println("<!DOCTYPE html><html>");
+                client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+                client.println("<link rel=\"icon\" href=\"data:,\">");
+                // CSS to style the on/off buttons 
+                // Feel free to change the background-color and font-size attributes to fit your preferences
+                client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+                client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
+                client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+                client.println(".button2 {background-color: #555555;}</style></head>");
+                
+                // Web Page Heading
+                client.println("<body><h1>ESP32 Web Server</h1>");
+                
+                // Display current state, and ON/OFF buttons for GPIO 26  
+                client.println("<p>GPIO 4 - State " + GPIO4_State + "</p>");
+                // If the output26State is off, it displays the ON button       
+                if (GPIO4_State=="OFF") {
+                  client.println("<p><a href=\"/4/ON\"><button class=\"button\">ON</button></a></p>");
+                } else {
+                  client.println("<p><a href=\"/4/OFF\"><button class=\"button button2\">OFF</button></a></p>");
+                } 
+                  
+                // Display current state, and ON/OFF buttons for GPIO 27  
+                client.println("<p>GPIO 5 - State " + GPIO5_State + "</p>");
+                // If the output27State is off, it displays the ON button       
+                if (GPIO5_State=="OFF") {
+                  client.println("<p><a href=\"/5/ON\"><button class=\"button\">ON</button></a></p>");
+                } else {
+                  client.println("<p><a href=\"/5/OFF\"><button class=\"button button2\">OFF</button></a></p>");
+                }
+                client.println("</body></html>");
+                
+                // The HTTP response ends with another blank line
+                client.println();
+                // Break out of the while loop
+                break;
+              } else {
+                currentLine = "";
+              }
+            } else if(c != '\r') {
+              currentLine += c;
+            }
+          }
+        }
+        header = ""; // Clear the header variable
+
+        // Close connection:
+        client.stop();
+        Serial.println("Client Disconnected.");
+        Serial.println("");
+      }
+  #endif
+
   #if defined(WEBPAGE_TEST)
     ws.cleanupClients();
     digitalWrite(ledPin, ledState);
+  #endif
+
+  #if defined(WEBPAGE_TEST_4)
+      Serial.println("=================================================");
+      // Connect to Wi-Fi network with SSID & Password:
+      Serial.println("Setting AP (Access Point)...");
+      // Remove the password parameter, if AP is open
+      WiFi.softAP(ssid, password);
+
+      IPAddress IP = WiFi.softAPIP();
+      Serial.print("AP IP Address: ");
+      Serial.println(IP);
+
+      server.begin();
+      Serial.println("=================================================");
+      Output_Webserver_Info();
+
+      WiFiClient client = server.available(); 
+      if(client) {
+        Serial.println("New Client.");
+        String currentLine = "";
+        while(client.connected()) {
+          if(client.available()) {
+            char c = client.read();
+            Serial.write(c);
+            // header += c;
+            if(c == '\n') {
+              if(currentLine.length() == 0) {
+                // delay(1000);
+                client.println("HTTP/1.1 200 OK");
+                client.println("Content-type:text/html");
+                client.println("Connection: close");
+                client.println();
+                // Display the HTML Web Page:
+                client.println("<!DOCTYPE html><html>");
+                client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+                client.println("<link rel=\"icon\" href=\"data:,\">");
+
+                client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+                // client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
+                client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}}</style></head>");
+                // client.println(".button2 {background-color: #555555;}</style></head>");
+
+                // Web Page Heading
+                client.println("<body><h1>ASME - Windmill Project</h1>");
+                client.println("<body><h2>RPM & Voltage/Current Sensing</h2>");
+
+                // Web Page Data:
+                // client.println("<body><h3>" + String(rpm) + "</h3>");
+
+                noInterrupts();
+                int count = pulses;
+                pulses = 0;
+                interrupts();
+                
+                // RPM = (pulses per second x 60) / magnets per revolution
+                float rpm = (count / (float)MAGNETS_PER_REV) * 60.0;
+                Serial.print("RPM: ");
+                Serial.println(rpm);
+
+                client.println("<div class=\"data-box\">");
+                client.println("Sensor Reading: <strong>");
+                client.println(rpm);
+                client.println("</strong>");
+                client.println("</div>");
+
+                client.println("</body></html>");
+                client.println();
+                break;
+              } else {
+              currentLine = "";
+              }
+          } else if(c != '\r') {
+            currentLine += c;
+          }
+        }
+      }
+      // header = "";
+      client.stop();
+      Serial.println("Client Disconnected.");
+      Serial.println("");
+    }
   #endif
 }
 
@@ -436,6 +713,9 @@ void loop() {
   }
 #endif
 
+#if defined(WEBPAGE_TEST_3)
+#endif
+
 #if defined(WEBPAGE_TEST)
   void notifyClients() {
     ws.textAll(String(ledState));
@@ -484,5 +764,34 @@ void loop() {
       }
     }
     return String();
+  }
+#endif
+
+#if defined(WEBPAGE_TEST_4)
+    void Output_Webserver_Info(void) {
+      Serial.println("=================================================");
+      // Connect to Wi-Fi network with SSID & Password:
+      Serial.println("Setting AP (Access Point)...");
+      // Remove the password parameter, if AP is open
+      WiFi.softAP(ssid, password);
+
+      IPAddress IP = WiFi.softAPIP();
+      Serial.print("AP IP Address: ");
+      Serial.println(IP);
+
+      server.begin();
+      Serial.println("=================================================");
+    }
+
+
+  void HandleRoot(void) {
+    float sensorValue = 25.4; // Replace with actual sensor read, e.g., dht.readTemperature()
+    
+    String html = "<html lang=\"en\"><head><meta http-equiv=\"refresh\" content=\"2\"></head><body>";
+    html += "<h1>ESP32 Sensor Dashboard</h1>";
+    html += "<p>Current Sensor Value: " + String(sensorValue) + " &deg;C</p>";
+    html += "</body></html>";
+    
+    // server.send(200, "text/html", html);
   }
 #endif

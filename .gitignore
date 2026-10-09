@@ -2,3 +2,4 @@
 **.vscode/
 **lib/
 **test/
+**/esp32_credentials.h
